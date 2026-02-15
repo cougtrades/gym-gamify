@@ -68,6 +68,13 @@ export default function WorkoutPage() {
     setExercises((prev) => {
       const updated = [...prev]
       updated[exerciseIdx].sets![setIdx][field] = value
+      
+      // Auto-complete if both weight and reps are filled
+      const set = updated[exerciseIdx].sets![setIdx]
+      if (set.weight > 0 && set.reps > 0) {
+        set.completed = true
+      }
+      
       return updated
     })
   }
@@ -166,16 +173,15 @@ export default function WorkoutPage() {
                       />
                     </div>
 
-                    <button
-                      onClick={() => toggleSetComplete(exerciseIdx, setIdx)}
+                    <div
                       className={`px-4 py-2 rounded-lg font-medium transition-all ${
                         set.completed
                           ? 'bg-green-500 text-white'
-                          : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                          : 'bg-zinc-700/50 text-zinc-500'
                       }`}
                     >
                       {set.completed ? '✓' : '○'}
-                    </button>
+                    </div>
                   </div>
                 ))}
               </div>
