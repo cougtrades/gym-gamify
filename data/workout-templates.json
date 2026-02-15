@@ -1,0 +1,120 @@
+{
+  "templates": [
+    {
+      "id": "push",
+      "name": "Push",
+      "description": "Chest, Shoulders, Triceps",
+      "exercises": [
+        {
+          "name": "Bench Press",
+          "default_sets": 4,
+          "default_reps": 8
+        },
+        {
+          "name": "Overhead Press",
+          "default_sets": 3,
+          "default_reps": 10
+        },
+        {
+          "name": "Incline Dumbbell Press",
+          "default_sets": 3,
+          "default_reps": 10
+        },
+        {
+          "name": "Lateral Raises",
+          "default_sets": 3,
+          "default_reps": 12
+        },
+        {
+          "name": "Tricep Pushdowns",
+          "default_sets": 3,
+          "default_reps": 12
+        },
+        {
+          "name": "Overhead Tricep Extension",
+          "default_sets": 3,
+          "default_reps": 12
+        }
+      ]
+    },
+    {
+      "id": "pull",
+      "name": "Pull",
+      "description": "Back, Biceps",
+      "exercises": [
+        {
+          "name": "Deadlift",
+          "default_sets": 4,
+          "default_reps": 6
+        },
+        {
+          "name": "Pull-ups",
+          "default_sets": 3,
+          "default_reps": 8
+        },
+        {
+          "name": "Barbell Rows",
+          "default_sets": 4,
+          "default_reps": 8
+        },
+        {
+          "name": "Lat Pulldowns",
+          "default_sets": 3,
+          "default_reps": 10
+        },
+        {
+          "name": "Face Pulls",
+          "default_sets": 3,
+          "default_reps": 15
+        },
+        {
+          "name": "Barbell Curls",
+          "default_sets": 3,
+          "default_reps": 10
+        },
+        {
+          "name": "Hammer Curls",
+          "default_sets": 3,
+          "default_reps": 12
+        }
+      ]
+    },
+    {
+      "id": "legs",
+      "name": "Legs",
+      "description": "Quads, Hamstrings, Calves",
+      "exercises": [
+        {
+          "name": "Squats",
+          "default_sets": 4,
+          "default_reps": 8
+        },
+        {
+          "name": "Romanian Deadlifts",
+          "default_sets": 3,
+          "default_reps": 10
+        },
+        {
+          "name": "Leg Press",
+          "default_sets": 3,
+          "default_reps": 12
+        },
+        {
+          "name": "Leg Curls",
+          "default_sets": 3,
+          "default_reps": 12
+        },
+        {
+          "name": "Leg Extensions",
+          "default_sets": 3,
+          "default_reps": 12
+        },
+        {
+          "name": "Calf Raises",
+          "default_sets": 4,
+          "default_reps": 15
+        }
+      ]
+    }
+  ]
+}
