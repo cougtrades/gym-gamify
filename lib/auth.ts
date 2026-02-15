@@ -65,11 +65,73 @@ export async function signOut() {
   return { error }
 }
 
+// Create or get user profile in database
+export async function ensureUserProfile(authUser: any): Promise<void> {
+  // Check if user profile exists
+  const { data: existing } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', authUser.id)
+    .single()
+
+  if (!existing) {
+    // Get guest data to migrate
+    const guestUser = getGuestUser()
+    const guestWorkouts = typeof window !== 'undefined' 
+      ? JSON.parse(localStorage.getItem('guest_workouts') || '[]')
+      : []
+
+    // Create new user profile with guest points if available
+    await supabase.from('users').insert({
+      id: authUser.id,
+      email: authUser.email,
+      username: authUser.email?.split('@')[0] || 'user',
+      points: guestUser?.points || 0,
+      streak_count: guestUser?.streak_count || 0
+    })
+
+    // Migrate guest workouts to database (if any)
+    for (const workout of guestWorkouts) {
+      const { data: newWorkout } = await supabase
+        .from('workouts')
+        .insert({
+          user_id: authUser.id,
+          template_name: workout.template_name,
+          duration_minutes: workout.duration_minutes,
+          completed_at: workout.completed_at
+        })
+        .select()
+        .single()
+
+      if (newWorkout && workout.sets) {
+        await supabase.from('workout_sets').insert(
+          workout.sets.map((s: any) => ({
+            workout_id: newWorkout.id,
+            exercise_name: s.exercise_name,
+            weight: s.weight,
+            reps: s.reps,
+            completed: s.completed
+          }))
+        )
+      }
+    }
+
+    // Clear guest data
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('guest_user')
+      localStorage.removeItem('guest_workouts')
+    }
+  }
+}
+
 // Get current user (auth or guest)
 export async function getCurrentUser(): Promise<User | null> {
   const { data: { user: authUser } } = await supabase.auth.getUser()
   
   if (authUser) {
+    // Ensure profile exists (and migrate guest data if needed)
+    await ensureUserProfile(authUser)
+
     // Fetch from database
     const { data } = await supabase
       .from('users')

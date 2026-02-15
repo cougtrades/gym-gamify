@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import workoutTemplates from '@/data/workout-templates.json'
 import { getCurrentUser, User } from '@/lib/auth'
+import { AuthModal } from '@/components/auth-modal'
+import { Button } from '@/components/ui/button'
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
     async function loadUser() {
@@ -27,6 +30,15 @@ export default function Home() {
           <p className="text-zinc-400 text-lg">
             Pick your workout and start earning points
           </p>
+          {user?.is_guest && (
+            <Button
+              onClick={() => setAuthModalOpen(true)}
+              className="mt-4"
+              variant="outline"
+            >
+              Sign up to compete 🏆
+            </Button>
+          )}
         </div>
 
         {/* Workout Templates */}
@@ -75,12 +87,21 @@ export default function Home() {
 
         {/* Guest mode indicator */}
         {user?.is_guest && (
-          <div className="mt-6 bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-center">
-            <p className="text-blue-300 text-sm">
+          <div className="mt-6 bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+            <p className="text-blue-300 text-sm text-center mb-3">
               🎮 <strong>Guest Mode</strong> - Your progress is saved locally. Sign up to compete on the leaderboard!
             </p>
+            <Button
+              onClick={() => setAuthModalOpen(true)}
+              className="w-full"
+              variant="default"
+            >
+              Create account
+            </Button>
           </div>
         )}
+
+        <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
       </div>
     </main>
   )
