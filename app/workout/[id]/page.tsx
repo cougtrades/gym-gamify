@@ -81,7 +81,8 @@ export default function WorkoutPage() {
 
   const completeWorkout = () => {
     // TODO: Save to Supabase
-    alert(`Workout complete! Duration: ${formatTime(elapsedSeconds)}`)
+    const bonusMessage = allSetsComplete ? ' (includes +20 bonus for completing all sets!)' : ''
+    alert(`Workout complete!\n\nPoints earned: ${totalPoints}${bonusMessage}\nDuration: ${formatTime(elapsedSeconds)}`)
     router.push('/')
   }
 
@@ -103,6 +104,11 @@ export default function WorkoutPage() {
     (acc, ex) => acc + (ex.sets?.filter((s) => s.completed).length || 0),
     0
   )
+
+  // Points calculation: 10 per set, +20 bonus for completing all
+  const pointsEarned = completedSets * 10
+  const allSetsComplete = completedSets === totalSets && totalSets > 0
+  const totalPoints = pointsEarned + (allSetsComplete ? 20 : 0)
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-6 pb-32">
@@ -197,7 +203,10 @@ export default function WorkoutPage() {
               disabled={completedSets === 0}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold py-4 px-6 rounded-xl text-lg transition-all disabled:cursor-not-allowed"
             >
-              Complete Workout (+10 pts)
+              {completedSets === 0 
+                ? 'Complete at least 1 set to finish' 
+                : `Complete Workout (+${totalPoints} pts${allSetsComplete ? ' 🔥' : ''})`
+              }
             </button>
           </div>
         </div>
