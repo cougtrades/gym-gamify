@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import workoutTemplates from '@/data/workout-templates.json'
+import { getCurrentUser, User } from '@/lib/auth'
+import { saveWorkout, WorkoutSet } from '@/lib/workouts'
 
 type Exercise = {
   name: string
@@ -22,21 +24,29 @@ export default function WorkoutPage() {
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [startTime, setStartTime] = useState<Date | null>(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [user, setUser] = useState<User | null>(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (template) {
-      // Initialize exercises with empty sets
-      const initialExercises = template.exercises.map((ex) => ({
-        ...ex,
-        sets: Array(ex.default_sets).fill(null).map(() => ({
-          weight: 0,
-          reps: ex.default_reps,
-          completed: false
+    async function init() {
+      const currentUser = await getCurrentUser()
+      setUser(currentUser)
+
+      if (template) {
+        // Initialize exercises with empty sets
+        const initialExercises = template.exercises.map((ex) => ({
+          ...ex,
+          sets: Array(ex.default_sets).fill(null).map(() => ({
+            weight: 0,
+            reps: ex.default_reps,
+            completed: false
+          }))
         }))
-      }))
-      setExercises(initialExercises)
-      setStartTime(new Date())
+        setExercises(initialExercises)
+        setStartTime(new Date())
+      }
     }
+    init()
   }, [template])
 
   // Timer
@@ -79,11 +89,42 @@ export default function WorkoutPage() {
     })
   }
 
-  const completeWorkout = () => {
-    // TODO: Save to Supabase
-    const bonusMessage = allSetsComplete ? ' (includes +20 bonus for completing all sets!)' : ''
-    alert(`Workout complete!\n\nPoints earned: ${totalPoints}${bonusMessage}\nDuration: ${formatTime(elapsedSeconds)}`)
-    router.push('/')
+  const completeWorkout = async () => {
+    if (!user) return
+    
+    setSaving(true)
+
+    const durationMinutes = Math.floor(elapsedSeconds / 60)
+    
+    // Flatten all completed sets
+    const allSets: WorkoutSet[] = exercises.flatMap((ex) => 
+      (ex.sets || [])
+        .filter(s => s.completed)
+        .map(s => ({
+          exercise_name: ex.name,
+          weight: s.weight,
+          reps: s.reps,
+          completed: s.completed
+        }))
+    )
+
+    const result = await saveWorkout(
+      user,
+      template!.name,
+      allSets,
+      durationMinutes,
+      totalPoints
+    )
+
+    setSaving(false)
+
+    if (result.success) {
+      const bonusMessage = allSetsComplete ? ' (includes +20 bonus for completing all sets!)' : ''
+      alert(`Workout complete!\n\nPoints earned: ${totalPoints}${bonusMessage}\nDuration: ${formatTime(elapsedSeconds)}`)
+      router.push('/')
+    } else {
+      alert('Error saving workout. Please try again.')
+    }
   }
 
   if (!template) {
@@ -200,12 +241,14 @@ export default function WorkoutPage() {
           <div className="max-w-2xl mx-auto">
             <button
               onClick={completeWorkout}
-              disabled={completedSets === 0}
+              disabled={completedSets === 0 || saving}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold py-4 px-6 rounded-xl text-lg transition-all disabled:cursor-not-allowed"
             >
-              {completedSets === 0 
-                ? 'Complete at least 1 set to finish' 
-                : `Complete Workout (+${totalPoints} pts${allSetsComplete ? ' 🔥' : ''})`
+              {saving
+                ? 'Saving...'
+                : completedSets === 0 
+                  ? 'Complete at least 1 set to finish' 
+                  : `Complete Workout (+${totalPoints} pts${allSetsComplete ? ' 🔥' : ''})`
               }
             </button>
           </div>
