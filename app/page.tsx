@@ -76,14 +76,23 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Leaderboard Link */}
-        <Link
-          href="/leaderboard"
-          className="block mt-8 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4 text-center hover:border-yellow-500/50 transition-all"
-        >
-          <p className="text-yellow-300 font-bold text-lg">🏆 View Leaderboard</p>
-          <p className="text-zinc-400 text-sm mt-1">See where you rank</p>
-        </Link>
+        {/* Quick Links */}
+        <div className="mt-8 grid grid-cols-2 gap-4">
+          <Link
+            href="/leaderboard"
+            className="block bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4 text-center hover:border-yellow-500/50 transition-all"
+          >
+            <p className="text-yellow-300 font-bold">🏆 Leaderboard</p>
+            <p className="text-zinc-400 text-xs mt-1">See rankings</p>
+          </Link>
+          <Link
+            href="/feedback"
+            className="block bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-xl p-4 text-center hover:border-blue-500/50 transition-all"
+          >
+            <p className="text-blue-300 font-bold">💡 Feedback</p>
+            <p className="text-zinc-400 text-xs mt-1">Request features</p>
+          </Link>
+        </div>
 
         {/* Stats */}
         <div className="mt-8 grid grid-cols-3 gap-4">
