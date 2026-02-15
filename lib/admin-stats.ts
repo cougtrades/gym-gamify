@@ -36,12 +36,20 @@ export async function getAdminStats(): Promise<AdminStats> {
     .from('workouts')
     .select('*', { count: 'exact', head: true })
 
+  // Calculate MRR ($7 per premium user)
+  const { count: premiumUsers } = await supabase
+    .from('users')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_premium', true)
+
+  const mrr = (premiumUsers || 0) * 7
+
   return {
     totalUsers: totalUsers || 0,
     dailySignups: dailySignups || 0,
     weeklyActiveUsers: uniqueActiveUsers.size,
     totalWorkouts: totalWorkouts || 0,
-    mrr: 0 // Will update when Stripe is added
+    mrr
   }
 }
 

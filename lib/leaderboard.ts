@@ -6,14 +6,21 @@ export type LeaderboardEntry = {
   points: number
   streak_count: number
   rank: number
+  is_premium?: boolean
 }
 
-export async function getLeaderboard(limit: number = 100): Promise<LeaderboardEntry[]> {
-  const { data, error } = await supabase
+export async function getLeaderboard(limit: number = 100, premiumOnly: boolean = false): Promise<LeaderboardEntry[]> {
+  let query = supabase
     .from('users')
-    .select('id, username, points, streak_count')
+    .select('id, username, points, streak_count, is_premium')
     .order('points', { ascending: false })
     .limit(limit)
+
+  if (premiumOnly) {
+    query = query.eq('is_premium', true)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     console.error('Error fetching leaderboard:', error)

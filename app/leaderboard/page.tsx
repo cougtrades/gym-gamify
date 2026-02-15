@@ -10,13 +10,17 @@ export default function LeaderboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [userRank, setUserRank] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showPremiumOnly, setShowPremiumOnly] = useState(false)
 
   useEffect(() => {
-    async function load() {
-      const [currentUser, leaders] = await Promise.all([
-        getCurrentUser(),
-        getLeaderboard(100)
-      ])
+    load()
+  }, [showPremiumOnly])
+
+  async function load() {
+    const [currentUser, leaders] = await Promise.all([
+      getCurrentUser(),
+      getLeaderboard(100, showPremiumOnly)
+    ])
 
       setUser(currentUser)
       setLeaderboard(leaders)
@@ -27,10 +31,7 @@ export default function LeaderboardPage() {
       }
 
       setLoading(false)
-    }
-
-    load()
-  }, [])
+  }
 
   const getMedalEmoji = (rank: number) => {
     if (rank === 1) return '🥇'
@@ -48,8 +49,34 @@ export default function LeaderboardPage() {
             ← Back
           </Link>
           <h1 className="text-3xl font-bold text-white">🏆 Leaderboard</h1>
-          <div className="w-16" /> {/* Spacer for center alignment */}
+          <div className="w-16" /> {/* Spacer */}
         </div>
+
+        {/* Toggle Premium Leaderboard */}
+        {user?.is_premium && (
+          <div className="mb-6 flex gap-2">
+            <button
+              onClick={() => setShowPremiumOnly(false)}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                !showPremiumOnly
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-zinc-700/50 text-zinc-400 hover:bg-zinc-700'
+              }`}
+            >
+              Global
+            </button>
+            <button
+              onClick={() => setShowPremiumOnly(true)}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                showPremiumOnly
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                  : 'bg-zinc-700/50 text-zinc-400 hover:bg-zinc-700'
+              }`}
+            >
+              💎 Premium Only
+            </button>
+          </div>
+        )}
 
         {/* User's rank card (if authenticated) */}
         {user && !user.is_guest && userRank && (
@@ -104,10 +131,11 @@ export default function LeaderboardPage() {
                       {getMedalEmoji(entry.rank)}
                     </div>
                     <div>
-                      <p className="text-white font-medium">
+                      <p className="text-white font-medium flex items-center gap-2">
                         {entry.username}
+                        {entry.is_premium && <span className="text-lg">💎</span>}
                         {isCurrentUser && (
-                          <span className="ml-2 text-xs text-blue-400">(You)</span>
+                          <span className="text-xs text-blue-400">(You)</span>
                         )}
                       </p>
                       {entry.streak_count > 0 && (
