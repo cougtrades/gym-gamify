@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { User, updateGuestUser } from './auth'
+import { updateStreak } from './streaks'
 
 export type WorkoutSet = {
   exercise_name: string
@@ -32,6 +33,9 @@ export async function saveWorkout(
     updateGuestUser({
       points: user.points + pointsEarned
     })
+    
+    // Update streak
+    await updateStreak(user.id, true)
     
     return { success: true }
   }
@@ -79,6 +83,9 @@ export async function saveWorkout(
       .eq('id', user.id)
 
     if (updateError) throw updateError
+
+    // Update streak
+    await updateStreak(user.id, false)
 
     return { success: true }
   } catch (error) {
