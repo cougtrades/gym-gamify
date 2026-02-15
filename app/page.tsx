@@ -76,6 +76,17 @@ export default function Home() {
           ))}
         </div>
 
+        {/* Premium CTA */}
+        {user && !user.is_guest && !user.is_premium && (
+          <Link
+            href="/premium"
+            className="block mt-8 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-2 border-blue-500/50 rounded-xl p-4 text-center hover:border-blue-500/70 transition-all"
+          >
+            <p className="text-blue-300 font-bold text-lg">✨ Upgrade to Premium</p>
+            <p className="text-zinc-400 text-sm mt-1">Custom workouts + exclusive leaderboard + history</p>
+          </Link>
+        )}
+
         {/* Quick Links */}
         <div className="mt-8 grid grid-cols-2 gap-4">
           <Link

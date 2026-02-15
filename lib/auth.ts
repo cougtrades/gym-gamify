@@ -7,6 +7,8 @@ export type User = {
   points: number
   streak_count: number
   is_guest: boolean
+  is_premium?: boolean
+  premium_expires_at?: string
 }
 
 // Generate a guest user ID
@@ -146,7 +148,9 @@ export async function getCurrentUser(): Promise<User | null> {
         username: data.username,
         points: data.points,
         streak_count: data.streak_count,
-        is_guest: false
+        is_guest: false,
+        is_premium: data.is_premium || false,
+        premium_expires_at: data.premium_expires_at
       }
     }
   }
