@@ -4,17 +4,24 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import workoutTemplates from '@/data/workout-templates.json'
 import { getCurrentUser, User } from '@/lib/auth'
+import { getUserRank } from '@/lib/leaderboard'
 import { AuthModal } from '@/components/auth-modal'
 import { Button } from '@/components/ui/button'
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
+  const [userRank, setUserRank] = useState<number | null>(null)
   const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
     async function loadUser() {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
+
+      if (currentUser && !currentUser.is_guest) {
+        const rank = await getUserRank(currentUser.id)
+        setUserRank(rank)
+      }
     }
     loadUser()
   }, [])
@@ -69,8 +76,17 @@ export default function Home() {
           ))}
         </div>
 
+        {/* Leaderboard Link */}
+        <Link
+          href="/leaderboard"
+          className="block mt-8 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4 text-center hover:border-yellow-500/50 transition-all"
+        >
+          <p className="text-yellow-300 font-bold text-lg">🏆 View Leaderboard</p>
+          <p className="text-zinc-400 text-sm mt-1">See where you rank</p>
+        </Link>
+
         {/* Stats */}
-        <div className="mt-12 grid grid-cols-3 gap-4">
+        <div className="mt-8 grid grid-cols-3 gap-4">
           <div className="bg-zinc-800/30 backdrop-blur border border-zinc-700/50 rounded-xl p-4 text-center">
             <div className="text-3xl font-bold text-white">{user?.points || 0}</div>
             <div className="text-zinc-500 text-sm mt-1">Points</div>
@@ -80,7 +96,9 @@ export default function Home() {
             <div className="text-zinc-500 text-sm mt-1">Streak</div>
           </div>
           <div className="bg-zinc-800/30 backdrop-blur border border-zinc-700/50 rounded-xl p-4 text-center">
-            <div className="text-3xl font-bold text-white">#-</div>
+            <div className="text-3xl font-bold text-white">
+              {user?.is_guest ? '#-' : userRank ? `#${userRank}` : '#-'}
+            </div>
             <div className="text-zinc-500 text-sm mt-1">Rank</div>
           </div>
         </div>
