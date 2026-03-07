@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Home, Trophy, MessageSquarePlus, User } from 'lucide-react'
 
 const navItems = [
@@ -13,6 +14,14 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Prevent hydration mismatch - don't render until mounted
+  if (!mounted) return null
 
   // Hide nav on workout pages and onboarding
   if (!pathname || pathname.startsWith('/workout/') || pathname.startsWith('/admin')) return null
