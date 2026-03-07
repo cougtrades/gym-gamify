@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { getCurrentUser, User } from '@/lib/auth'
 import { getUserRank } from '@/lib/leaderboard'
 import { AuthModal } from '@/components/auth-modal'
 import { Button } from '@/components/ui/button'
 import { AnimatedNumber } from '@/components/animated-number'
 import { OnboardingFlow } from '@/components/onboarding-flow'
+import { Flame, Trophy, Zap, ChevronRight, MessageSquarePlus, Crown } from 'lucide-react'
 
 type Template = {
   id: string
@@ -16,10 +18,14 @@ type Template = {
   exercises: Array<{ name: string; default_sets: number; default_reps: number }>
 }
 
-function SkeletonPulse({ className = '' }: { className?: string }) {
-  return (
-    <div className={`animate-pulse rounded-md bg-zinc-600/40 ${className}`} />
-  )
+const TEMPLATE_CONFIG: Record<string, { gradient: string; icon: string; accent: string }> = {
+  push: { gradient: 'from-orange-500/20 to-red-500/10', icon: '🔥', accent: 'text-orange-400' },
+  pull: { gradient: 'from-blue-500/20 to-cyan-500/10', icon: '💪', accent: 'text-blue-400' },
+  legs: { gradient: 'from-emerald-500/20 to-green-500/10', icon: '🦵', accent: 'text-emerald-400' },
+}
+
+function StatSkeleton() {
+  return <div className="h-8 w-12 animate-pulse rounded bg-white/5" />
 }
 
 export function HomeClient({ templates }: { templates: Template[] }) {
@@ -42,7 +48,6 @@ export function HomeClient({ templates }: { templates: Template[] }) {
       }
     } catch { /* ignore */ }
 
-    // Fetch fresh data in background
     async function loadUser() {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
@@ -56,12 +61,12 @@ export function HomeClient({ templates }: { templates: Template[] }) {
         setUserRank(rank)
         if (rank) localStorage.setItem('cached_user_rank', rank.toString())
       }
-      
+
       const hasSeenOnboarding = localStorage.getItem('has-seen-onboarding')
       if (!hasSeenOnboarding && (!currentUser || currentUser.is_guest)) {
         setShowOnboarding(true)
       }
-      
+
       setIsLoading(false)
     }
     loadUser()
@@ -76,141 +81,170 @@ export function HomeClient({ templates }: { templates: Template[] }) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />
   }
 
+  const totalSets = templates.reduce(
+    (acc, t) => acc + t.exercises.reduce((a, e) => a + e.default_sets, 0),
+    0
+  )
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12 mt-8">
-          <h1 className="text-5xl font-bold text-white mb-4">
-            💪 Gym Gamify
-          </h1>
-          <p className="text-zinc-400 text-lg">
-            Pick your workout and start earning points
-          </p>
-          {user?.is_guest && (
+    <main className="min-h-[100dvh] bg-zinc-950 text-white">
+      <div className="max-w-lg mx-auto px-4 pb-24">
+        {/* Top bar */}
+        <header className="flex items-center justify-between pt-4 pb-6">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">
+              Gym Gamify
+            </h1>
+            {user && !user.is_guest && user.username && (
+              <p className="text-sm text-zinc-500">@{user.username}</p>
+            )}
+          </div>
+          {user?.is_guest ? (
             <Button
               onClick={() => setAuthModalOpen(true)}
-              className="mt-4"
-              variant="outline"
+              size="sm"
+              className="bg-white text-zinc-950 hover:bg-zinc-200 font-semibold text-xs px-4"
             >
-              Sign up to compete 🏆
+              Sign up
             </Button>
-          )}
+          ) : user?.is_premium ? (
+            <span className="flex items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-400/10 px-3 py-1.5 rounded-full border border-amber-400/20">
+              <Crown className="w-3.5 h-3.5" />
+              PRO
+            </span>
+          ) : null}
+        </header>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <Zap className="w-4 h-4 text-yellow-400" />
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Points</span>
+            </div>
+            <div className="text-2xl font-bold tabular-nums">
+              {isLoading ? <StatSkeleton /> : <AnimatedNumber value={user?.points || 0} />}
+            </div>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <Flame className="w-4 h-4 text-orange-400" />
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Streak</span>
+            </div>
+            <div className="text-2xl font-bold tabular-nums">
+              {isLoading ? <StatSkeleton /> : <AnimatedNumber value={user?.streak_count || 0} />}
+            </div>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <Trophy className="w-4 h-4 text-blue-400" />
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Rank</span>
+            </div>
+            <div className="text-2xl font-bold tabular-nums">
+              {isLoading ? (
+                <StatSkeleton />
+              ) : user?.is_guest ? (
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="text-sm text-zinc-600 hover:text-zinc-400 transition-colors"
+                >
+                  —
+                </button>
+              ) : userRank ? (
+                <>#{userRank}</>
+              ) : (
+                <span className="text-zinc-600">—</span>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Workout Templates — renders instantly */}
-        <div className="space-y-4">
-          {templates.map((template) => (
-            <Link
-              key={template.id}
-              href={`/workout/${template.id}`}
-              prefetch={true}
-              className="block bg-zinc-800/50 backdrop-blur border border-zinc-700 rounded-2xl p-6 hover:bg-zinc-700/50 hover:border-zinc-600 transition-all duration-200 hover:scale-[1.02]"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">
-                    {template.name}
-                  </h2>
-                  <p className="text-zinc-400">{template.description}</p>
-                  <p className="text-zinc-500 text-sm mt-2">
-                    {template.exercises.length} exercises
-                  </p>
-                </div>
-                <div className="text-4xl">
-                  {template.id === 'push' && '🔥'}
-                  {template.id === 'pull' && '💪'}
-                  {template.id === 'legs' && '🦵'}
-                </div>
-              </div>
-            </Link>
-          ))}
+        {/* Workout section */}
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-3 px-1">
+            Start a workout
+          </h2>
+          <div className="space-y-3">
+            {templates.map((template, i) => {
+              const config = TEMPLATE_CONFIG[template.id] || TEMPLATE_CONFIG.push
+              return (
+                <motion.div
+                  key={template.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.3 }}
+                >
+                  <Link
+                    href={`/workout/${template.id}`}
+                    prefetch={true}
+                    className={`group flex items-center gap-4 bg-gradient-to-r ${config.gradient} bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-all active:scale-[0.98]`}
+                  >
+                    <div className="text-3xl flex-shrink-0">{config.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold">{template.name}</h3>
+                      <p className="text-sm text-zinc-500">{template.description}</p>
+                      <p className="text-xs text-zinc-600 mt-1">
+                        {template.exercises.length} exercises · {template.exercises.reduce((a, e) => a + e.default_sets, 0)} sets
+                      </p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
+                  </Link>
+                </motion.div>
+              )
+            })}
+          </div>
         </div>
 
         {/* Premium CTA */}
         {user && !user.is_guest && !user.is_premium && (
           <Link
             href="/premium"
-            className="block mt-8 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-2 border-blue-500/50 rounded-xl p-4 text-center hover:border-blue-500/70 transition-all"
+            className="group flex items-center gap-3 bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20 rounded-2xl p-4 mb-6 hover:border-violet-500/40 transition-all"
           >
-            <p className="text-blue-300 font-bold text-lg">✨ Upgrade to Premium</p>
-            <p className="text-zinc-400 text-sm mt-1">Custom workouts + exclusive leaderboard + history</p>
+            <Crown className="w-5 h-5 text-violet-400 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-violet-300">Unlock Premium</p>
+              <p className="text-xs text-zinc-500">Custom workouts, exclusive leaderboard, history</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-violet-400 transition-colors flex-shrink-0" />
           </Link>
         )}
 
-        {/* Quick Links */}
-        <div className="mt-8 grid grid-cols-2 gap-4">
+        {/* Quick links */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
           <Link
             href="/leaderboard"
-            className="block bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4 text-center hover:border-yellow-500/50 transition-all"
+            className="group flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
           >
-            <p className="text-yellow-300 font-bold">🏆 Leaderboard</p>
-            <p className="text-zinc-400 text-xs mt-1">See rankings</p>
+            <Trophy className="w-5 h-5 text-yellow-400" />
+            <div>
+              <p className="text-sm font-semibold">Leaderboard</p>
+              <p className="text-xs text-zinc-600">Rankings</p>
+            </div>
           </Link>
           <Link
             href="/feedback"
-            className="block bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-xl p-4 text-center hover:border-blue-500/50 transition-all"
+            className="group flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
           >
-            <p className="text-blue-300 font-bold">💡 Feedback</p>
-            <p className="text-zinc-400 text-xs mt-1">Request features</p>
+            <MessageSquarePlus className="w-5 h-5 text-blue-400" />
+            <div>
+              <p className="text-sm font-semibold">Feedback</p>
+              <p className="text-xs text-zinc-600">Requests</p>
+            </div>
           </Link>
         </div>
 
-        {/* Stats */}
-        <div className="mt-8 grid grid-cols-3 gap-4">
-          <div className="bg-zinc-800/30 backdrop-blur border border-zinc-700/50 rounded-xl p-4 text-center">
-            <div className="text-3xl font-bold text-white h-9 flex items-center justify-center">
-              {isLoading ? (
-                <SkeletonPulse className="h-8 w-12 mx-auto" />
-              ) : (
-                <AnimatedNumber value={user?.points || 0} />
-              )}
-            </div>
-            <div className="text-zinc-500 text-sm mt-1">Points</div>
-          </div>
-          <div className="bg-zinc-800/30 backdrop-blur border border-zinc-700/50 rounded-xl p-4 text-center">
-            <div className="text-3xl font-bold text-white h-9 flex items-center justify-center">
-              {isLoading ? (
-                <SkeletonPulse className="h-8 w-8 mx-auto" />
-              ) : (
-                <AnimatedNumber value={user?.streak_count || 0} />
-              )}
-            </div>
-            <div className="text-zinc-500 text-sm mt-1">Streak</div>
-          </div>
-          <div className="bg-zinc-800/30 backdrop-blur border border-zinc-700/50 rounded-xl p-4 text-center">
-            <div className="h-9 flex items-center justify-center">
-              {isLoading ? (
-                <SkeletonPulse className="h-8 w-10 mx-auto" />
-              ) : user?.is_guest ? (
-                <button
-                  onClick={() => setAuthModalOpen(true)}
-                  className="text-sm font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2"
-                >
-                  Sign up to<br/>view rank
-                </button>
-              ) : userRank ? (
-                <div className="text-3xl font-bold text-white">#{userRank}</div>
-              ) : (
-                <div className="text-3xl font-bold text-zinc-600">#-</div>
-              )}
-            </div>
-            <div className="text-zinc-500 text-sm mt-1">Rank</div>
-          </div>
-        </div>
-
-        {/* Guest mode indicator */}
+        {/* Guest banner */}
         {user?.is_guest && (
-          <div className="mt-6 bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-            <p className="text-blue-300 text-sm text-center mb-3">
-              🎮 <strong>Guest Mode</strong> - Your progress is saved locally. Sign up to compete on the leaderboard!
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+            <p className="text-sm text-zinc-400 text-center mb-3">
+              <span className="text-zinc-300 font-medium">Guest mode</span> — sign up to save progress and compete
             </p>
             <Button
               onClick={() => setAuthModalOpen(true)}
-              className="w-full"
-              variant="default"
+              className="w-full bg-white text-zinc-950 hover:bg-zinc-200 font-semibold"
             >
-              Create account
+              Create free account
             </Button>
           </div>
         )}

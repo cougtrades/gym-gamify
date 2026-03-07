@@ -12,49 +12,40 @@ export function AnimatedSetCheckbox({ completed, onToggle, setNumber }: Animated
   return (
     <motion.button
       onClick={onToggle}
-      className="relative w-14 h-14 rounded-xl flex items-center justify-center font-bold text-lg overflow-visible"
+      className="relative w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm overflow-visible flex-shrink-0"
       whileTap={{ scale: 0.85 }}
       animate={{
-        scale: completed ? [1, 1.5, 1.1, 1] : 1,
-        rotate: completed ? [0, -10, 10, 0] : 0,
+        scale: completed ? [1, 1.3, 1.05, 1] : 1,
       }}
-      transition={{
-        duration: 0.5,
-        ease: 'easeOut',
-      }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-      {/* Background - animates from center */}
       <motion.div
         className="absolute inset-0 rounded-xl"
         initial={false}
         animate={{
-          backgroundColor: completed ? '#22c55e' : 'rgba(63, 63, 70, 0.5)',
+          backgroundColor: completed ? '#22c55e' : 'rgba(39, 39, 42, 0.8)',
         }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.2 }}
       />
 
-      {/* Pulse ring on completion */}
       {completed && (
         <motion.div
-          className="absolute inset-0 rounded-xl border-4 border-green-400"
+          className="absolute inset-0 rounded-xl border-2 border-green-400"
           initial={{ scale: 0.8, opacity: 1 }}
-          animate={{ scale: 2, opacity: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+          animate={{ scale: 1.8, opacity: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
         />
       )}
 
-      {/* Inner content */}
       <motion.div
         className="relative z-10"
-        animate={{
-          scale: completed ? [0.5, 1.2, 1] : 1,
-        }}
-        transition={{ duration: 0.4, delay: 0.1 }}
+        animate={{ scale: completed ? [0.5, 1.1, 1] : 1 }}
+        transition={{ duration: 0.3, delay: 0.05 }}
       >
         {completed ? (
           <motion.svg
-            width="28"
-            height="28"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="white"
@@ -66,23 +57,13 @@ export function AnimatedSetCheckbox({ completed, onToggle, setNumber }: Animated
               d="M5 13l4 4L19 7"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 0.4, ease: 'easeInOut' }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
             />
           </motion.svg>
         ) : (
-          <span className="text-zinc-400 text-lg font-mono">{setNumber}</span>
+          <span className="text-zinc-500 text-sm font-mono">{setNumber}</span>
         )}
       </motion.div>
-
-      {/* Glow effect when completed */}
-      {completed && (
-        <motion.div
-          className="absolute inset-0 rounded-xl bg-green-500/50 blur-xl"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: [0, 0.8, 0], scale: [0.8, 1.5, 1.5] }}
-          transition={{ duration: 0.8 }}
-        />
-      )}
     </motion.button>
   )
 }
