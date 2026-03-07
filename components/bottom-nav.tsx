@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import { Home, Trophy, MessageSquarePlus, User } from 'lucide-react'
 
 const navItems = [
@@ -14,18 +13,12 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname()
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  // Don't render during SSR to avoid hydration mismatch
-  // pathname is null on server, but will be set on client
-  if (!isClient) return null
 
   // Hide nav on workout pages and admin
-  if (pathname?.startsWith('/workout/') || pathname?.startsWith('/admin')) return null
+  // pathname is null during SSR, so we always render on server
+  // On client, we hide it for /workout/* and /admin/*
+  const shouldHide = pathname && (pathname.startsWith('/workout/') || pathname.startsWith('/admin'))
+  if (shouldHide) return null
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-sm border-t border-zinc-900">

@@ -38,6 +38,11 @@ export function HomeClient({ templates }: { templates: Template[] }) {
   // Suggested workout - must be declared before any early returns
   const [suggestedId, setSuggestedId] = useState<string>('push')
   const [motivationalMsg, setMotivationalMsg] = useState<string>('')
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
     // Show cached data instantly
@@ -185,7 +190,7 @@ export function HomeClient({ templates }: { templates: Template[] }) {
               return (
                 <motion.div
                   key={template.id}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={isClient ? { opacity: 0, y: 12 } : { opacity: 1, y: 0 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, duration: 0.3 }}
                 >
