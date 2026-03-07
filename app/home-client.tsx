@@ -9,7 +9,7 @@ import { AuthModal } from '@/components/auth-modal'
 import { Button } from '@/components/ui/button'
 import { AnimatedNumber } from '@/components/animated-number'
 import { OnboardingFlow } from '@/components/onboarding-flow'
-import { Flame, Trophy, Zap, ChevronRight, MessageSquarePlus, Crown, Sparkles, History } from 'lucide-react'
+import { Flame, Trophy, Zap, ChevronRight, Crown, Sparkles, History } from 'lucide-react'
 import { getSuggestedWorkout, getLastWorkoutTemplate, getMotivationalMessage } from '@/lib/daily-suggestion'
 
 type Template = {
@@ -35,16 +35,13 @@ export function HomeClient({ templates }: { templates: Template[] }) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
-  // Suggested workout - must be declared before any early returns
   const [suggestedId, setSuggestedId] = useState<string>('push')
   const [motivationalMsg, setMotivationalMsg] = useState<string>('')
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
-  }, [])
-
-  useEffect(() => {
+    
     // Show cached data instantly
     try {
       const cached = localStorage.getItem('cached_user_data')
@@ -94,6 +91,34 @@ export function HomeClient({ templates }: { templates: Template[] }) {
     setShowOnboarding(false)
   }
 
+  // Don't render onboarding until client-side to avoid hydration mismatch
+  if (!isClient) {
+    return (
+      <main className="min-h-[100dvh] bg-zinc-950 text-white">
+        <div className="max-w-lg mx-auto px-4 pb-24">
+          <header className="flex items-center justify-between pt-4 pb-6">
+            <h1 className="text-xl font-bold tracking-tight">Gym Gamify</h1>
+          </header>
+          <div className="grid grid-cols-3 gap-3 mb-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
+                <div className="h-8 w-12 animate-pulse rounded bg-white/5 mx-auto" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-3">
+            {templates.map((template) => (
+              <div key={template.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                <h3 className="text-lg font-bold">{template.name}</h3>
+                <p className="text-sm text-zinc-500">{template.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   if (showOnboarding) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />
   }
@@ -101,7 +126,6 @@ export function HomeClient({ templates }: { templates: Template[] }) {
   return (
     <main className="min-h-[100dvh] bg-zinc-950 text-white">
       <div className="max-w-lg mx-auto px-4 pb-24">
-        {/* Top bar */}
         <header className="flex items-center justify-between pt-4 pb-6">
           <div>
             <h1 className="text-xl font-bold tracking-tight">
@@ -190,7 +214,7 @@ export function HomeClient({ templates }: { templates: Template[] }) {
               return (
                 <motion.div
                   key={template.id}
-                  initial={isClient ? { opacity: 0, y: 12 } : { opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, duration: 0.3 }}
                 >
@@ -222,63 +246,24 @@ export function HomeClient({ templates }: { templates: Template[] }) {
           </div>
         </div>
 
-        {/* Premium CTA */}
-        {user && !user.is_guest && !user.is_premium && (
-          <Link
-            href="/premium"
-            className="group flex items-center gap-3 bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20 rounded-2xl p-4 mb-6 hover:border-violet-500/40 transition-all"
-          >
-            <Crown className="w-5 h-5 text-violet-400 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-violet-300">Unlock Premium</p>
-              <p className="text-xs text-zinc-500">Custom workouts, exclusive leaderboard, history</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-violet-400 transition-colors flex-shrink-0" />
-          </Link>
-        )}
-
         {/* Quick links */}
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <Link
-            href="/leaderboard"
-            className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
-          >
+          <Link href="/leaderboard" className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]">
             <Trophy className="w-5 h-5 text-yellow-400" />
             <p className="text-xs font-semibold">Leaderboard</p>
           </Link>
-          <Link
-            href="/history"
-            className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
-          >
+          <Link href="/history" className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]">
             <History className="w-5 h-5 text-emerald-400" />
             <p className="text-xs font-semibold">History</p>
           </Link>
-          <Link
-            href="/feedback"
-            className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
-          >
-            <MessageSquarePlus className="w-5 h-5 text-blue-400" />
+          <Link href="/feedback" className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M12 8v6"/><path d="M9 11h6"/></svg>
             <p className="text-xs font-semibold">Feedback</p>
           </Link>
         </div>
-
-        {/* Guest banner */}
-        {user?.is_guest && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-            <p className="text-sm text-zinc-400 text-center mb-3">
-              <span className="text-zinc-300 font-medium">Guest mode</span> — sign up to save progress and compete
-            </p>
-            <Button
-              onClick={() => setAuthModalOpen(true)}
-              className="w-full bg-white text-zinc-950 hover:bg-zinc-200 font-semibold"
-            >
-              Create free account
-            </Button>
-          </div>
-        )}
-
-        <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
       </div>
+
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
     </main>
   )
 }
