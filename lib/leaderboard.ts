@@ -11,7 +11,7 @@ export type LeaderboardEntry = {
 
 export async function getLeaderboard(limit: number = 100, premiumOnly: boolean = false): Promise<LeaderboardEntry[]> {
   let query = supabase
-    .from('users')
+    .from('public_profiles')
     .select('id, username, points, streak_count, is_premium')
     .order('points', { ascending: false })
     .limit(limit)
@@ -35,7 +35,7 @@ export async function getLeaderboard(limit: number = 100, premiumOnly: boolean =
 
 export async function getUserRank(userId: string): Promise<number | null> {
   const { data: user } = await supabase
-    .from('users')
+    .from('public_profiles')
     .select('points')
     .eq('id', userId)
     .single()
@@ -43,7 +43,7 @@ export async function getUserRank(userId: string): Promise<number | null> {
   if (!user) return null
 
   const { count } = await supabase
-    .from('users')
+    .from('public_profiles')
     .select('*', { count: 'exact', head: true })
     .gt('points', user.points)
 

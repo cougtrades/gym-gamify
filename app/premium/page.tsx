@@ -20,17 +20,25 @@ export default function PremiumPage() {
   }, [])
 
   const handleUpgrade = async () => {
-    if (!user || user.is_guest) {
+    if (!user || user.is_guest || !user.email) {
       alert('Sign up first to upgrade to premium')
       return
     }
 
     setLoading(true)
     try {
+      // Reload user to ensure profile exists
+      const freshUser = await getCurrentUser()
+      if (!freshUser || freshUser.is_guest) {
+        alert('Please refresh the page and try again')
+        setLoading(false)
+        return
+      }
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ userId: freshUser.id, email: freshUser.email }),
       })
 
       const { url, error } = await response.json()

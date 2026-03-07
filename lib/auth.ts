@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getGuestStreak } from './streaks'
 
 export type User = {
   id: string
@@ -21,15 +22,22 @@ export function getGuestUser(): User {
   if (typeof window === 'undefined') return null as any
 
   const stored = localStorage.getItem('guest_user')
+  const calculatedStreak = getGuestStreak()
+  
   if (stored) {
-    return JSON.parse(stored)
+    const user = JSON.parse(stored)
+    // Always recalculate streak from workout history
+    return {
+      ...user,
+      streak_count: calculatedStreak
+    }
   }
 
   // Create new guest
   const guestUser: User = {
     id: generateGuestId(),
     points: 0,
-    streak_count: 0,
+    streak_count: calculatedStreak,
     is_guest: true
   }
   
@@ -134,7 +142,7 @@ export async function getCurrentUser(): Promise<User | null> {
     // Ensure profile exists (and migrate guest data if needed)
     await ensureUserProfile(authUser)
 
-    // Fetch from database
+    // Fetch user data
     const { data } = await supabase
       .from('users')
       .select('*')
@@ -142,12 +150,30 @@ export async function getCurrentUser(): Promise<User | null> {
       .single()
     
     if (data) {
+      // Calculate streak from workout history
+      const { data: workouts } = await supabase
+        .from('workouts')
+        .select('completed_at')
+        .eq('user_id', authUser.id)
+        .order('completed_at', { ascending: false })
+      
+      const { calculateStreakFromWorkouts } = await import('./streaks')
+      const calculatedStreak = calculateStreakFromWorkouts(workouts || [])
+      
+      // Update streak in database if different
+      if (calculatedStreak !== data.streak_count) {
+        await supabase
+          .from('users')
+          .update({ streak_count: calculatedStreak })
+          .eq('id', authUser.id)
+      }
+      
       return {
         id: data.id,
         email: data.email,
         username: data.username,
         points: data.points,
-        streak_count: data.streak_count,
+        streak_count: calculatedStreak,
         is_guest: false,
         is_premium: data.is_premium || false,
         premium_expires_at: data.premium_expires_at

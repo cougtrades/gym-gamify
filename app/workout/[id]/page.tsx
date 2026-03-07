@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { motion } from 'framer-motion'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import workoutTemplates from '@/data/workout-templates.json'
 import { getCurrentUser, User } from '@/lib/auth'
 import { saveWorkout, WorkoutSet } from '@/lib/workouts'
+import { AnimatedSetCheckbox } from '@/components/animated-set-checkbox'
+import { WorkoutCelebration } from '@/components/workout-celebration'
 
 type Exercise = {
   name: string
@@ -14,51 +17,99 @@ type Exercise = {
   sets?: Array<{ weight: number; reps: number; completed: boolean }>
 }
 
+function initExercises(template: typeof workoutTemplates.templates[0]): Exercise[] {
+  return template.exercises.map((ex) => ({
+    ...ex,
+    sets: Array(ex.default_sets).fill(null).map(() => ({
+      weight: 0,
+      reps: ex.default_reps,
+      completed: false
+    }))
+  }))
+}
+
 export default function WorkoutPage() {
   const params = useParams()
   const router = useRouter()
   const workoutId = params.id as string
 
   const template = workoutTemplates.templates.find((t) => t.id === workoutId)
-  
-  const [exercises, setExercises] = useState<Exercise[]>([])
-  const [startTime, setStartTime] = useState<Date | null>(null)
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
-  const [user, setUser] = useState<User | null>(null)
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    async function init() {
-      const currentUser = await getCurrentUser()
-      setUser(currentUser)
-
-      if (template) {
-        // Initialize exercises with empty sets
-        const initialExercises = template.exercises.map((ex) => ({
-          ...ex,
-          sets: Array(ex.default_sets).fill(null).map(() => ({
-            weight: 0,
-            reps: ex.default_reps,
-            completed: false
-          }))
-        }))
-        setExercises(initialExercises)
-        setStartTime(new Date())
+  // Initialize exercises IMMEDIATELY from template — no waiting for async
+  const [exercises, setExercises] = useState<Exercise[]>(() => {
+    if (!template) return []
+    
+    // Check for saved draft synchronously
+    if (typeof window !== 'undefined') {
+      const savedDraft = localStorage.getItem(`workout-draft-${workoutId}`)
+      if (savedDraft) {
+        try {
+          return JSON.parse(savedDraft)
+        } catch (e) {
+          // Fall through
+        }
       }
     }
-    init()
-  }, [template])
+    
+    return initExercises(template)
+  })
+
+  const [startTime, setStartTime] = useState<Date | null>(() => {
+    if (typeof window !== 'undefined') {
+      const savedStartTime = localStorage.getItem(`workout-start-${workoutId}`)
+      if (savedStartTime) return new Date(savedStartTime)
+    }
+    return new Date()
+  })
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedElapsed = localStorage.getItem(`workout-elapsed-${workoutId}`)
+      if (savedElapsed) return parseInt(savedElapsed)
+    }
+    return 0
+  })
+
+  const [user, setUser] = useState<User | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [isWorkoutComplete, setIsWorkoutComplete] = useState(false)
+
+  // Load user in the background — doesn't block UI
+  useEffect(() => {
+    getCurrentUser().then(setUser)
+  }, [])
+
+  // Save workout draft to localStorage whenever exercises change
+  useEffect(() => {
+    if (exercises.length > 0 && !isWorkoutComplete) {
+      localStorage.setItem(`workout-draft-${workoutId}`, JSON.stringify(exercises))
+      if (startTime) {
+        localStorage.setItem(`workout-start-${workoutId}`, startTime.toISOString())
+        localStorage.setItem(`workout-elapsed-${workoutId}`, elapsedSeconds.toString())
+      }
+    }
+  }, [exercises, startTime, elapsedSeconds, workoutId, isWorkoutComplete])
+
+  // Clear draft when workout is completed
+  useEffect(() => {
+    if (isWorkoutComplete) {
+      localStorage.removeItem(`workout-draft-${workoutId}`)
+      localStorage.removeItem(`workout-start-${workoutId}`)
+      localStorage.removeItem(`workout-elapsed-${workoutId}`)
+    }
+  }, [isWorkoutComplete, workoutId])
 
   // Timer
   useEffect(() => {
-    if (!startTime) return
+    if (!startTime || isWorkoutComplete) return
     
     const interval = setInterval(() => {
       setElapsedSeconds(Math.floor((Date.now() - startTime.getTime()) / 1000))
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [startTime])
+  }, [startTime, isWorkoutComplete])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -78,13 +129,17 @@ export default function WorkoutPage() {
     setExercises((prev) => {
       const updated = [...prev]
       updated[exerciseIdx].sets![setIdx][field] = value
-      
-      // Auto-complete if both weight and reps are filled
+      return updated
+    })
+  }
+
+  const handleSetBlur = (exerciseIdx: number, setIdx: number) => {
+    setExercises((prev) => {
+      const updated = [...prev]
       const set = updated[exerciseIdx].sets![setIdx]
-      if (set.weight > 0 && set.reps > 0) {
+      if (set.weight > 0 && set.reps > 0 && !set.completed) {
         set.completed = true
       }
-      
       return updated
     })
   }
@@ -96,7 +151,6 @@ export default function WorkoutPage() {
 
     const durationMinutes = Math.floor(elapsedSeconds / 60)
     
-    // Flatten all completed sets
     const allSets: WorkoutSet[] = exercises.flatMap((ex) => 
       (ex.sets || [])
         .filter(s => s.completed)
@@ -119,9 +173,8 @@ export default function WorkoutPage() {
     setSaving(false)
 
     if (result.success) {
-      const bonusMessage = allSetsComplete ? ' (includes +20 bonus for completing all sets!)' : ''
-      alert(`Workout complete!\n\nPoints earned: ${totalPoints}${bonusMessage}\nDuration: ${formatTime(elapsedSeconds)}`)
-      router.push('/')
+      setIsWorkoutComplete(true)
+      setShowCelebration(true)
     } else {
       alert('Error saving workout. Please try again.')
     }
@@ -146,7 +199,6 @@ export default function WorkoutPage() {
     0
   )
 
-  // Points calculation: 10 per set, +20 bonus for completing all
   const pointsEarned = completedSets * 10
   const allSetsComplete = completedSets === totalSets && totalSets > 0
   const totalPoints = pointsEarned + (allSetsComplete ? 20 : 0)
@@ -186,17 +238,21 @@ export default function WorkoutPage() {
 
               <div className="space-y-2">
                 {exercise.sets?.map((set, setIdx) => (
-                  <div
+                  <motion.div
                     key={setIdx}
-                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                      set.completed
-                        ? 'bg-green-500/20 border-2 border-green-500/50'
-                        : 'bg-zinc-700/30 border-2 border-zinc-600/50'
-                    }`}
+                    initial={false}
+                    animate={{
+                      backgroundColor: set.completed ? 'rgba(34, 197, 94, 0.15)' : 'rgba(63, 63, 70, 0.3)',
+                      borderColor: set.completed ? 'rgba(34, 197, 94, 0.4)' : 'rgba(82, 82, 91, 0.5)',
+                    }}
+                    transition={{ duration: 0.2 }}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2`}
                   >
-                    <div className="text-zinc-400 font-mono text-sm w-8">
-                      {setIdx + 1}
-                    </div>
+                    <AnimatedSetCheckbox
+                      completed={set.completed}
+                      setNumber={setIdx + 1}
+                      onToggle={() => toggleSetComplete(exerciseIdx, setIdx)}
+                    />
 
                     <div className="flex-1 flex gap-2">
                       <input
@@ -205,6 +261,7 @@ export default function WorkoutPage() {
                         onChange={(e) =>
                           updateSetValue(exerciseIdx, setIdx, 'weight', parseInt(e.target.value) || 0)
                         }
+                        onBlur={() => handleSetBlur(exerciseIdx, setIdx)}
                         placeholder="lbs"
                         className="w-20 bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-white text-center"
                       />
@@ -215,21 +272,12 @@ export default function WorkoutPage() {
                         onChange={(e) =>
                           updateSetValue(exerciseIdx, setIdx, 'reps', parseInt(e.target.value) || 0)
                         }
+                        onBlur={() => handleSetBlur(exerciseIdx, setIdx)}
                         placeholder="reps"
                         className="w-20 bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-white text-center"
                       />
                     </div>
-
-                    <div
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        set.completed
-                          ? 'bg-green-500 text-white'
-                          : 'bg-zinc-700/50 text-zinc-500'
-                      }`}
-                    >
-                      {set.completed ? '✓' : '○'}
-                    </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -254,6 +302,14 @@ export default function WorkoutPage() {
           </div>
         </div>
       </div>
+
+      <WorkoutCelebration
+        isOpen={showCelebration}
+        points={totalPoints}
+        duration={formatTime(elapsedSeconds)}
+        allSetsComplete={allSetsComplete}
+        onClose={() => router.push('/')}
+      />
     </main>
   )
 }
