@@ -9,8 +9,9 @@ import { getCurrentUser, User } from '@/lib/auth'
 import { saveWorkout, WorkoutSet } from '@/lib/workouts'
 import { AnimatedSetCheckbox } from '@/components/animated-set-checkbox'
 import { WorkoutCelebration } from '@/components/workout-celebration'
-import { ArrowLeft, Clock, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Timer } from 'lucide-react'
 import { getLastWeight, saveWorkoutHistory } from '@/lib/exercise-history'
+import { RestTimer } from '@/components/rest-timer'
 
 type Exercise = {
   name: string
@@ -72,6 +73,7 @@ export default function WorkoutPage() {
   const [saving, setSaving] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
   const [isWorkoutComplete, setIsWorkoutComplete] = useState(false)
+  const [showRestTimer, setShowRestTimer] = useState(false)
 
   useEffect(() => { getCurrentUser().then(setUser) }, [])
 
@@ -113,9 +115,16 @@ export default function WorkoutPage() {
       const updated = [...prev]
       const exercise = { ...updated[exerciseIdx] }
       const sets = [...(exercise.sets || [])]
-      sets[setIdx] = { ...sets[setIdx], completed: !sets[setIdx].completed }
+      const wasCompleted = sets[setIdx].completed
+      sets[setIdx] = { ...sets[setIdx], completed: !wasCompleted }
       exercise.sets = sets
       updated[exerciseIdx] = exercise
+
+      // Show rest timer when completing a set (not unchecking)
+      if (!wasCompleted) {
+        setShowRestTimer(true)
+      }
+
       return updated
     })
   }, [])
@@ -142,6 +151,7 @@ export default function WorkoutPage() {
         sets[setIdx] = { ...set, completed: true }
         exercise.sets = sets
         updated[exerciseIdx] = exercise
+        setShowRestTimer(true)
       }
       return updated
     })
@@ -207,9 +217,18 @@ export default function WorkoutPage() {
               <span className="text-sm">Back</span>
             </Link>
             <h1 className="text-lg font-bold">{template.name}</h1>
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <Clock className="w-3.5 h-3.5" />
-              <span className="text-sm font-mono tabular-nums">{formatTime(elapsedSeconds)}</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowRestTimer(!showRestTimer)}
+                className={`p-1.5 rounded-lg transition-colors ${showRestTimer ? 'text-blue-400 bg-blue-500/10' : 'text-zinc-500 hover:text-white'}`}
+                title="Rest timer"
+              >
+                <Timer className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-1.5 text-zinc-400">
+                <Clock className="w-3.5 h-3.5" />
+                <span className="text-sm font-mono tabular-nums">{formatTime(elapsedSeconds)}</span>
+              </div>
             </div>
           </div>
           {/* Progress bar */}
@@ -340,6 +359,11 @@ export default function WorkoutPage() {
           </div>
         </div>
       </div>
+
+      <RestTimer
+        isOpen={showRestTimer}
+        onClose={() => setShowRestTimer(false)}
+      />
 
       <WorkoutCelebration
         isOpen={showCelebration}
