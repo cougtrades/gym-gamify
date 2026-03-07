@@ -15,7 +15,7 @@ export function BottomNav() {
   const pathname = usePathname()
 
   // Hide nav on workout pages and onboarding
-  if (pathname.startsWith('/workout/') || pathname.startsWith('/admin')) return null
+  if (!pathname || pathname.startsWith('/workout/') || pathname.startsWith('/admin')) return null
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-sm border-t border-zinc-900">
