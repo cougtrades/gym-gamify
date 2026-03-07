@@ -9,7 +9,7 @@ import { AuthModal } from '@/components/auth-modal'
 import { Button } from '@/components/ui/button'
 import { AnimatedNumber } from '@/components/animated-number'
 import { OnboardingFlow } from '@/components/onboarding-flow'
-import { Flame, Trophy, Zap, ChevronRight, MessageSquarePlus, Crown, Sparkles } from 'lucide-react'
+import { Flame, Trophy, Zap, ChevronRight, MessageSquarePlus, Crown, Sparkles, History } from 'lucide-react'
 import { getSuggestedWorkout, getLastWorkoutTemplate, getMotivationalMessage } from '@/lib/daily-suggestion'
 
 type Template = {
@@ -234,26 +234,27 @@ export function HomeClient({ templates }: { templates: Template[] }) {
         )}
 
         {/* Quick links */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <Link
             href="/leaderboard"
-            className="group flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
+            className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
           >
             <Trophy className="w-5 h-5 text-yellow-400" />
-            <div>
-              <p className="text-sm font-semibold">Leaderboard</p>
-              <p className="text-xs text-zinc-600">Rankings</p>
-            </div>
+            <p className="text-xs font-semibold">Leaderboard</p>
+          </Link>
+          <Link
+            href="/history"
+            className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
+          >
+            <History className="w-5 h-5 text-emerald-400" />
+            <p className="text-xs font-semibold">History</p>
           </Link>
           <Link
             href="/feedback"
-            className="group flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
+            className="group flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
           >
             <MessageSquarePlus className="w-5 h-5 text-blue-400" />
-            <div>
-              <p className="text-sm font-semibold">Feedback</p>
-              <p className="text-xs text-zinc-600">Requests</p>
-            </div>
+            <p className="text-xs font-semibold">Feedback</p>
           </Link>
         </div>
 
