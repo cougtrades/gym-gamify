@@ -35,6 +35,9 @@ export function HomeClient({ templates }: { templates: Template[] }) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  // Suggested workout - must be declared before any early returns
+  const [suggestedId, setSuggestedId] = useState<string>('push')
+  const [motivationalMsg, setMotivationalMsg] = useState<string>('')
 
   useEffect(() => {
     // Show cached data instantly
@@ -73,6 +76,14 @@ export function HomeClient({ templates }: { templates: Template[] }) {
     loadUser()
   }, [])
 
+  useEffect(() => {
+    const lastTemplate = getLastWorkoutTemplate()
+    setSuggestedId(getSuggestedWorkout(lastTemplate || undefined))
+    if (user) {
+      setMotivationalMsg(getMotivationalMessage(user.streak_count || 0, user.points || 0))
+    }
+  }, [user])
+
   const handleOnboardingComplete = () => {
     localStorage.setItem('has-seen-onboarding', 'true')
     setShowOnboarding(false)
@@ -81,18 +92,6 @@ export function HomeClient({ templates }: { templates: Template[] }) {
   if (showOnboarding) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />
   }
-
-  // Suggested workout
-  const [suggestedId, setSuggestedId] = useState<string>('push')
-  const [motivationalMsg, setMotivationalMsg] = useState<string>('')
-
-  useEffect(() => {
-    const lastTemplate = getLastWorkoutTemplate()
-    setSuggestedId(getSuggestedWorkout(lastTemplate || undefined))
-    if (user) {
-      setMotivationalMsg(getMotivationalMessage(user.streak_count || 0, user.points || 0))
-    }
-  }, [user])
 
   return (
     <main className="min-h-[100dvh] bg-zinc-950 text-white">
