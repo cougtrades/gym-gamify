@@ -49,7 +49,6 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <AuthCallbackHandler />
         {children}
-        <BottomNav />
       </body>
     </html>
   );
