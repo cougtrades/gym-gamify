@@ -11,8 +11,10 @@ interface AnimatedNumberProps {
 export function AnimatedNumber({ value, className = '' }: AnimatedNumberProps) {
   const [displayValue, setDisplayValue] = useState(value)
   const [isInitial, setIsInitial] = useState(true)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
     if (isInitial) {
       // First load - show value immediately, no animation
       setDisplayValue(value)
@@ -50,7 +52,7 @@ export function AnimatedNumber({ value, className = '' }: AnimatedNumberProps) {
   return (
     <motion.span 
       className={className}
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={isClient ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
     >
