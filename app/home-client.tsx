@@ -9,7 +9,8 @@ import { AuthModal } from '@/components/auth-modal'
 import { Button } from '@/components/ui/button'
 import { AnimatedNumber } from '@/components/animated-number'
 import { OnboardingFlow } from '@/components/onboarding-flow'
-import { Flame, Trophy, Zap, ChevronRight, MessageSquarePlus, Crown } from 'lucide-react'
+import { Flame, Trophy, Zap, ChevronRight, MessageSquarePlus, Crown, Sparkles } from 'lucide-react'
+import { getSuggestedWorkout, getLastWorkoutTemplate, getMotivationalMessage } from '@/lib/daily-suggestion'
 
 type Template = {
   id: string
@@ -81,10 +82,17 @@ export function HomeClient({ templates }: { templates: Template[] }) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />
   }
 
-  const totalSets = templates.reduce(
-    (acc, t) => acc + t.exercises.reduce((a, e) => a + e.default_sets, 0),
-    0
-  )
+  // Suggested workout
+  const [suggestedId, setSuggestedId] = useState<string>('push')
+  const [motivationalMsg, setMotivationalMsg] = useState<string>('')
+
+  useEffect(() => {
+    const lastTemplate = getLastWorkoutTemplate()
+    setSuggestedId(getSuggestedWorkout(lastTemplate || undefined))
+    if (user) {
+      setMotivationalMsg(getMotivationalMessage(user.streak_count || 0, user.points || 0))
+    }
+  }, [user])
 
   return (
     <main className="min-h-[100dvh] bg-zinc-950 text-white">
@@ -159,6 +167,13 @@ export function HomeClient({ templates }: { templates: Template[] }) {
           </div>
         </div>
 
+        {/* Motivational message */}
+        {motivationalMsg && !isLoading && (
+          <div className="mb-6 px-1">
+            <p className="text-sm text-zinc-500">{motivationalMsg}</p>
+          </div>
+        )}
+
         {/* Workout section */}
         <div className="mb-6">
           <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-3 px-1">
@@ -167,6 +182,7 @@ export function HomeClient({ templates }: { templates: Template[] }) {
           <div className="space-y-3">
             {templates.map((template, i) => {
               const config = TEMPLATE_CONFIG[template.id] || TEMPLATE_CONFIG.push
+              const isSuggested = template.id === suggestedId
               return (
                 <motion.div
                   key={template.id}
@@ -177,8 +193,15 @@ export function HomeClient({ templates }: { templates: Template[] }) {
                   <Link
                     href={`/workout/${template.id}`}
                     prefetch={true}
-                    className={`group flex items-center gap-4 bg-gradient-to-r ${config.gradient} bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-all active:scale-[0.98]`}
+                    className={`group relative flex items-center gap-4 bg-gradient-to-r ${config.gradient} bg-zinc-900 border rounded-2xl p-5 hover:border-zinc-700 transition-all active:scale-[0.98] ${
+                      isSuggested ? 'border-green-500/30' : 'border-zinc-800'
+                    }`}
                   >
+                    {isSuggested && (
+                      <span className="absolute -top-2.5 right-4 flex items-center gap-1 text-[10px] font-semibold text-green-400 bg-green-500/15 border border-green-500/30 px-2 py-0.5 rounded-full">
+                        <Sparkles className="w-3 h-3" /> Up next
+                      </span>
+                    )}
                     <div className="text-3xl flex-shrink-0">{config.icon}</div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold">{template.name}</h3>
