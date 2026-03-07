@@ -10,6 +10,7 @@ import { saveWorkout, WorkoutSet } from '@/lib/workouts'
 import { AnimatedSetCheckbox } from '@/components/animated-set-checkbox'
 import { WorkoutCelebration } from '@/components/workout-celebration'
 import { ArrowLeft, Clock, CheckCircle2 } from 'lucide-react'
+import { getLastWeight, saveWorkoutHistory } from '@/lib/exercise-history'
 
 type Exercise = {
   name: string
@@ -19,14 +20,18 @@ type Exercise = {
 }
 
 function initExercises(template: typeof workoutTemplates.templates[0]): Exercise[] {
-  return template.exercises.map((ex) => ({
-    ...ex,
-    sets: Array(ex.default_sets).fill(null).map(() => ({
-      weight: 0,
-      reps: ex.default_reps,
-      completed: false
-    }))
-  }))
+  return template.exercises.map((ex) => {
+    // Pre-fill from last workout's weights
+    const lastUsed = getLastWeight(ex.name)
+    return {
+      ...ex,
+      sets: Array(ex.default_sets).fill(null).map(() => ({
+        weight: lastUsed?.weight || 0,
+        reps: lastUsed?.reps || ex.default_reps,
+        completed: false
+      }))
+    }
+  })
 }
 
 export default function WorkoutPage() {
@@ -162,6 +167,8 @@ export default function WorkoutPage() {
     setSaving(false)
 
     if (result.success) {
+      // Save weights for next session's pre-fill
+      saveWorkoutHistory(exercises)
       setIsWorkoutComplete(true)
       setShowCelebration(true)
     } else {
@@ -235,12 +242,22 @@ export default function WorkoutPage() {
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold flex items-center gap-2">
-                    {exercise.name}
-                    {exerciseCompleted && (
-                      <CheckCircle2 className="w-4 h-4 text-green-400" />
-                    )}
-                  </h3>
+                  <div>
+                    <h3 className="text-base font-bold flex items-center gap-2">
+                      {exercise.name}
+                      {exerciseCompleted && (
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      )}
+                    </h3>
+                    {(() => {
+                      const last = getLastWeight(exercise.name)
+                      return last ? (
+                        <p className="text-[10px] text-zinc-600 mt-0.5">
+                          Last: {last.weight}lbs × {last.reps}
+                        </p>
+                      ) : null
+                    })()}
+                  </div>
                   <span className="text-xs text-zinc-600">
                     {exercise.sets?.filter(s => s.completed).length}/{exercise.sets?.length}
                   </span>
